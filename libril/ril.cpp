@@ -1467,7 +1467,7 @@ static int responseDataRegistrationState(Parcel &p, void *response, size_t respo
 
     if (numStrings >= 4 && response != NULL) { /* we are going to modify index 3 */
         char **p_cur = (char **) response;
-        if ( strlen(p_cur[3]) >= 2 && strncmp("18", p_cur[3], 3) == 0 ) {
+        if ( p_cur[3] != NULL && strlen(p_cur[3]) >= 2 && strncmp("18", p_cur[3], 3) == 0 ) {
             /* qcoms libril seems to report hspap as 18 while AOSP expects 15
              * We are going to fix this up on-the-fly without patching the framework */
             RLOGI("pabx: forcefully setting radio tech to HSPA+ (%d)", RADIO_TECH_HSPAP);
