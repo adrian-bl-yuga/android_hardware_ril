@@ -213,6 +213,7 @@ static void dispatchCdmaBrSmsCnf(Parcel &p, RequestInfo *pRI);
 static void dispatchRilCdmaSmsWriteArgs(Parcel &p, RequestInfo *pRI);
 static void dispatchNetworkManual (Parcel& p, RequestInfo *pRI);
 static int responseInts(Parcel &p, void *response, size_t responselen);
+static int responseDataRegistrationState(Parcel &p, void *response, size_t responselen);
 static int responseStrings(Parcel &p, void *response, size_t responselen);
 static int responseString(Parcel &p, void *response, size_t responselen);
 static int responseVoid(Parcel &p, void *response, size_t responselen);
@@ -1458,6 +1459,22 @@ responseInts(Parcel &p, void *response, size_t responselen) {
     The parcel will begin with the version */
 static int responseStringsWithVersion(int version, Parcel &p, void *response, size_t responselen) {
     p.writeInt32(version);
+    return responseStrings(p, response, responselen);
+}
+
+static int responseDataRegistrationState(Parcel &p, void *response, size_t responselen) {
+    int numStrings = responselen / sizeof(char *);
+
+    if (numStrings >= 4 && response != NULL) { /* we are going to modify index 3 */
+        char **p_cur = (char **) response;
+        if ( strlen(p_cur[3]) >= 2 && strncmp("18", p_cur[3], 3) == 0 ) {
+            /* qcoms libril seems to report hspap as 18 while AOSP expects 15
+             * We are going to fix this up on-the-fly without patching the framework */
+            RLOGI("pabx: forcefully setting radio tech to HSPA+ (%d)", RADIO_TECH_HSPAP);
+            snprintf(p_cur[3], 3, "%d", RADIO_TECH_HSPAP);
+        }
+    }
+
     return responseStrings(p, response, responselen);
 }
 
