@@ -1681,14 +1681,23 @@ static int responseStringsWithVersion(int version, Parcel &p, void *response, si
 
 static int responseDataRegistrationState(Parcel &p, void *response, size_t responselen) {
     int numStrings = responselen / sizeof(char *);
+    int forcedTech = 0;
 
     if (numStrings >= 4 && response != NULL) { /* we are going to modify index 3 */
         char **p_cur = (char **) response;
-        if ( p_cur[3] != NULL && strlen(p_cur[3]) >= 2 && strncmp("18", p_cur[3], 3) == 0 ) {
-            /* qcoms libril seems to report hspap as 18 while AOSP expects 15
-             * We are going to fix this up on-the-fly without patching the framework */
-            RLOGI("pabx: forcefully setting radio tech to HSPA+ (%d)", RADIO_TECH_HSPAP);
-            snprintf(p_cur[3], 3, "%d", RADIO_TECH_HSPAP);
+
+        if ( p_cur[3] != NULL && strlen(p_cur[3]) == 2 ) { // p_cur[3] is 3 bytes long
+
+            if (!memcmp("18", p_cur[3], 3)) {
+                forcedTech = RADIO_TECH_HSPAP; // actually RADIO_TECH_DC_HSDPA
+            } else if (!memcmp("19", p_cur[3], 3)) {
+                forcedTech = RADIO_TECH_UMTS; // some variant of 3g?!
+            }
+
+            if (forcedTech) {
+                RLOGI("pabx: forcefully setting radio tech to %d", forcedTech);
+                snprintf(p_cur[3], 3, "%d", forcedTech);
+            }
         }
     }
 
